@@ -1,0 +1,113 @@
+(function() {
+  // Define the list of mining pools
+  const pools = [
+    { url: 'pool.satoshiradio.nl', port: 3333 },
+    { url: 'solo.ckpool.org', port: 3333 }
+  ];
+
+  // Initialize the current pool index from localStorage or start at 0
+  let currentPoolIndex = parseInt(localStorage.getItem('currentPoolIndex'), 10) || 0;
+
+  // Function to set the mining pool
+  function setPool(pool) {
+    console.log(`Switching to pool: ${pool.url}:${pool.port}`);
+
+    // Get the Stratum URL input
+    const stratumURLInput = document.getElementById('stratumURL');
+    if (!stratumURLInput) {
+      console.error('Stratum URL input field not found.');
+      return;
+    }
+
+    // Get the Stratum Port input
+    const stratumPortInput = document.getElementById('stratumPort');
+    if (!stratumPortInput) {
+      console.error('Stratum Port input field not found.');
+      return;
+    }
+
+    // Set the values
+    stratumURLInput.value = pool.url;
+    stratumPortInput.value = pool.port;
+
+    // Dispatch input events to notify Angular of the changes
+    stratumURLInput.dispatchEvent(new Event('input', { bubbles: true }));
+    stratumPortInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Find the "Save" button
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const saveButton = buttons.find(btn => btn.textContent.trim().toLowerCase() === 'save');
+    if (saveButton) {
+      saveButton.click();
+      console.log('Clicked the Save button.');
+    } else {
+      console.error('Save button not found.');
+      return;
+    }
+
+    // Wait for the save operation to complete before restarting
+    // Adjust the timeout as needed based on your application's response time
+    setTimeout(() => {
+      const restartButton = buttons.find(btn => btn.textContent.trim().toLowerCase() === 'restart');
+      if (restartButton) {
+        restartButton.click();
+        console.log('Clicked the Restart button.');
+      } else {
+        console.error('Restart button not found.');
+      }
+    }, 5000); // Wait 5 seconds before clicking Restart
+  }
+
+  // Function to switch to the next pool
+  function switchPool() {
+    // Update the pool index
+    currentPoolIndex = (currentPoolIndex + 1) % pools.length;
+    localStorage.setItem('currentPoolIndex', currentPoolIndex);
+
+    // Set the new pool
+    setPool(pools[currentPoolIndex]);
+
+    // Reset the countdown
+    timeLeft = oneHour;
+  }
+
+  // Immediately set the initial pool when the script runs
+  setPool(pools[currentPoolIndex]);
+
+  // Set the interval to 1 hour (3,600,000 milliseconds)
+  const oneHour = 3600000;
+  setInterval(switchPool, oneHour);
+
+  // Initialize countdown timer
+  let timeLeft = oneHour;
+
+  // Function to format time as HH:MM:SS
+  function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  }
+
+  // Function to start the countdown
+  function startCountdown() {
+    const countdownInterval = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        return;
+      }
+
+      // Log the remaining time
+      console.log(`Time until next pool switch: ${formatTime(timeLeft)}`);
+
+      // Decrement the time left by 1 second (1000 milliseconds)
+      timeLeft -= 1000;
+    }, 1000);
+  }
+
+  // Start the countdown when the script initializes
+  startCountdown();
+
+  console.log('Mining pool switcher script initialized.');
+})();
